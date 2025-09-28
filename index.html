@@ -2,157 +2,347 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>テスト対策クイズ</title>
+  <title>テスト対策クイズ（3モード対応版＋All/RetryボタンUI改善）</title>
   <style>
-    body { font-family: sans-serif; padding: 1em; max-width: 700px; margin: auto; background:#f6f7fb; }
-    .card { background:#fff; border-radius: 12px; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:2em; margin-top:1em; }
-    .choice-btn { display:block; margin:1.2em 0; padding:1.6em; border-radius:12px; border:2px solid #ddd; background:#f9f9f9; cursor:pointer; width:100%; font-size:1.4em; line-height:1.5; }
-    .choice-btn:hover { background:#eef; }
-    .result { font-weight:bold; margin:1.2em 0; font-size:1.3em; }
-    .explanation { margin:1.2em 0; background:#f8f8ff; padding:1.4em; border-radius:10px; border:1px dashed #ccc; line-height:1.7; font-size:1.2em; }
-    #nextBtn { display:block; margin:1.8em auto; background:#4b6ef5; color:#fff; border:none; padding:1.2em 1.8em; border-radius:10px; cursor:pointer; font-size:1.4em; width:100%; }
-    #nextBtn:disabled { background:#aaa; cursor:not-allowed; }
-    #score { text-align:center; margin-top:1.2em; font-weight:bold; font-size:1.3em; }
-    h1 { margin-bottom:0.6em; text-align:center; }
-    .question-text { font-size:1.5em; line-height:1.7; margin-bottom:1.2em; }
-
-    /* スマホ向け調整 */
-    @media (max-width: 600px) {
-      body { padding: 0.6em; }
-      .card { padding: 1.5em; }
-      .choice-btn { font-size: 1.5em; padding: 1.6em; margin:1.4em 0; }
-      #nextBtn { width: 100%; font-size: 1.5em; padding: 1.4em; }
-      h1 { font-size: 1.8em; text-align:center; }
-      .question-text { font-size:1.6em; }
+    body { font-family: sans-serif; padding: 2em; max-width: 700px; margin: auto; background:#f6f7fb}
+    .quiz-container { border: 1px solid #ccc; padding: 1.5em; border-radius: 12px; margin-top: 1em; background:#fff}
+    .choice-btn { display: block; margin: 0.5em 0; padding: 1em; font-size: 1em; width: 100%; border-radius: 6px; border: 1px solid #ccc; background: #f9f9f9; cursor: pointer; text-align: center; }
+    .choice-btn:hover { background: #cce; }
+    .choice-check { display: none; }
+    .choice-label { display: block; margin: 0.5em 0; padding: 1em; font-size: 1em; border-radius: 6px; border: 1px solid #ccc; cursor: pointer; text-align: center; background: #f9f9f9; }
+    .choice-check:checked + .choice-label { background: #cce; border-color: #88f; }
+    .result { font-weight: bold; margin-top: 1em; }
+    .explanation { margin-top: 1em; background: #f8f8ff; padding: 0.8em; border-radius: 8px; }
+    /* ---- Nextボタン ---- */
+    #nextBtn {
+      display: block; width: 100%; padding: 1em; font-size: 1.1em; border: none; border-radius: 10px;
+      color: #fff; background: #3498db; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      cursor: pointer; transition: transform 0.05s ease, opacity 0.2s ease;
+      margin-top: 1.5em;
     }
-  </style>
+    #nextBtn:hover { opacity: 0.92; transform: translateY(-1px); }
+    #nextBtn:active { transform: translateY(0); }
+    /* ---- 3モードのボタン ---- */
+    #restartBtnAll, #retryWrongBtn, #retryLastBtn {
+      display: block; width: 100%; padding: 1em; margin-top: 0.5em;
+      font-size: 1.1em; border: none; border-radius: 10px; color: #fff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer;
+      transition: transform 0.05s ease, opacity 0.2s ease;
+    }
+    #restartBtnAll { background: #e67e22; }
+    #retryWrongBtn { background: #e74c3c; }
+    #retryLastBtn { background: #9b59b6; }
+    #restartBtnAll:hover, #retryWrongBtn:hover, #retryLastBtn:hover { opacity: 0.92; transform: translateY(-1px); }
+    #restartBtnAll:active, #retryWrongBtn:active, #retryLastBtn:active { transform: translateY(0); }
+  
+    input[type="text"] {
+      font-size: 16px;
+      padding: 0.5em;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* 問題文を大きくする */
+    .question-text {
+      font-size: 20px;
+      line-height: 1.6;
+    }
+
+    /* 選択肢ボタン（Single/マルチ共通） */
+    .choice-btn, .choice-label {
+      font-size: 20px;
+      padding: 1.2em;
+    }
+
+    /* ナビゲーションボタン（次の問題へ、やり直しモードなど） */
+    .nav-btn {
+      font-size: 18px;
+      padding: 1em 2em;
+    }
+
+    /*回答するボタン*/
+    .answer-btn {
+        display: block;
+        width: 100%;
+        margin-top: 1em;
+        padding: 1.2em;
+        font-size: 1.1em;
+        font-weight: bold;
+        border: none;
+        border-radius: 10px;
+        color: #fff;
+        background: #28a745; /* 緑とか、選択肢と違う色 */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+    }
+    .answer-btn:hover {
+        background: #218838;
+        transform: translateY(-1px);
+    }
+
+    /* 無効化しても色が薄くなりすぎないように */
+    .choice-btn:disabled { opacity: 1; cursor: default; }
+
+    /* 選択・正解・不正解の視覚化 */
+    .choice-btn.selected   { background: #cce; }
+    .choice-btn.correct    { background: #d1fae5; border: 1px solid #10b981; }
+    .choice-label.correct  { background: #d1fae5 !important; border: 1px solid #10b981 !important; }
+
+    /*回答するボタンの無効化*/
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+
+
+</style>
 </head>
 <body>
   <h1>テスト対策クイズ</h1>
-  <p style="text-align:center;">CSVファイルを選んで読み込むとクイズが始まります。</p>
-  <div style="text-align:center; margin:1em 0;">
-    <input type="file" id="csvInput">
-  </div>
-  <div id="quiz" class="card" style="display:none;"></div>
+  <p>CSVファイルを読み込んでクイズを開始します。</p>
+  <input type="file" id="csvInput">
+  <div id="quiz" class="quiz-container" style="display:none;"></div>
   <button id="nextBtn" style="display:none;">次の問題へ</button>
+  <button id="restartBtnAll" style="display:none;">全問題をやり直す</button>
+  <button id="retryWrongBtn" style="display:none;">間違えた問題だけやり直す</button>
+  <button id="retryLastBtn" style="display:none;">今やった問題だけやり直す</button>
   <div id="score"></div>
 
-<script>
-let quizData = [];
-let current = 0;
-let correct = 0;
+  <script>
+    let allQuestions = [];
+    let quizData = [];
+    let current = 0;
+    let correct = 0;
+    let wrongQuestions = [];
+    let lastPlayedQuestions = [];
 
-function shuffleArray(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
-
-function splitCSVLine(line) {
-  const result = [];
-  let current = '';
-  let insideQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"') {
-      if (insideQuotes && line[i+1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        insideQuotes = !insideQuotes;
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
       }
-    } else if (char === ',' && !insideQuotes) {
-      result.push(current);
-      current = '';
-    } else {
-      current += char;
     }
-  }
-  result.push(current);
-  return result;
-}
 
-document.getElementById('csvInput').addEventListener('change', function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    parseCSV(ev.target.result);
-    current = 0;
-    correct = 0;
-    document.getElementById('score').innerText = '';
-    showQuiz();
-  };
-  reader.readAsText(file, 'utf-8');
-});
-
-function parseCSV(data) {
-  quizData = [];
-  const lines = data.trim().split(/\r?\n/);
-  for (let i = 1; i < lines.length; i++) {
-    let items = lines[i].split(',');
-    if (items.length < 7) {
-      items = splitCSVLine(lines[i]);
-    }
-    if (items.length < 7) continue;
-    const explanation = items.slice(6).join(',');
-    quizData.push({
-      question: items[0],
-      choices: items.slice(1, 5),
-      answer: parseInt(items[5], 10),
-      explanation: explanation
+    document.getElementById('csvInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        parseCSV(ev.target.result);
+        startQuiz(allQuestions);
+      };
+      reader.readAsText(file, 'utf-8');
     });
-  }
-  shuffleArray(quizData);
-}
 
-function showQuiz() {
-  if (current >= quizData.length) {
-    document.getElementById('quiz').style.display = 'none';
-    document.getElementById('nextBtn').style.display = 'none';
-    document.getElementById('score').innerHTML = `<b>終了！</b><br>正答数: ${correct} / ${quizData.length} (${quizData.length > 0 ? (correct/quizData.length*100).toFixed(1) : 0}%)`;
-    return;
-  }
-  const q = quizData[current];
-  const pairs = q.choices.map((c, idx) => ({ text: c, idx: idx+1 }));
-  shuffleArray(pairs);
-  q.shuffled = pairs;
-  q.correctIndex = pairs.findIndex(p => p.idx === q.answer) + 1;
+    function splitCSVLine(line) {
+      const result = [];
+      let current = '';
+      let insideQuote = false;
+      for (let i=0; i<line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          insideQuote = !insideQuote;
+        } else if (char === ',' && !insideQuote) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    }
 
-  let html = `<div class="question-text"><b>Q${current+1}. </b>${q.question}</div>`;
-  pairs.forEach((c, idx) => {
-    html += `<button class="choice-btn" onclick="checkAnswer(${idx+1})">${c.text}</button>`;
-  });
-  html += `<div id="result" class="result"></div>`;
-  html += `<div id="explanation" class="explanation" style="display:none;"></div>`;
-  document.getElementById('quiz').innerHTML = html;
-  document.getElementById('quiz').style.display = '';
-  document.getElementById('nextBtn').style.display = 'none';
-}
+    function parseCSV(data) {
+      allQuestions = [];
+      const lines = data.trim().split(/\r?\n/);
+      for (let i = 1; i < lines.length; i++) {
+        let items = splitCSVLine(lines[i]);
+        if (items.length < 5) continue;
+        const type = items[0].trim();
+        const question = items[1].trim();
+        const choices = items.slice(2, 8).filter(c => c.trim() !== "");
+        const answer = items[8].trim();
+        const explanation = items.slice(9).join(",");
+        allQuestions.push({ type, question, choices, answer, explanation });
+      }
+    }
 
-window.checkAnswer = function(choice) {
-  const q = quizData[current];
-  const res = document.getElementById('result');
-  const exp = document.getElementById('explanation');
-  if (choice === q.correctIndex) {
-    res.innerHTML = '正解！';
-    res.style.color = 'green';
-    correct++;
-  } else {
-    res.innerHTML = `不正解…<br>正解: ${q.shuffled[q.correctIndex-1].text}`;
-    res.style.color = 'red';
-  }
-  exp.innerHTML = q.explanation.replace(/\n/g, '<br>');
-  exp.style.display = '';
-  Array.from(document.getElementsByClassName('choice-btn')).forEach(btn => btn.disabled = true);
-  document.getElementById('nextBtn').style.display = '';
-};
+    function startQuiz(questionSet) {
+      quizData = [...questionSet];
+      shuffleArray(quizData);
+      current = 0;
+      correct = 0;
+      wrongQuestions = [];
+      lastPlayedQuestions = quizData;
+      document.getElementById('score').innerHTML = '';
+      document.getElementById('restartBtnAll').style.display = 'none';
+      document.getElementById('retryWrongBtn').style.display = 'none';
+      document.getElementById('retryLastBtn').style.display = 'none';
+      showQuiz();
+    }
 
-document.getElementById('nextBtn').addEventListener('click', function() {
-  current++;
-  showQuiz();
-});
-</script>
+    function showQuiz() {
+      if (current >= quizData.length) {
+        document.getElementById('quiz').style.display = 'none';
+        document.getElementById('nextBtn').style.display = 'none';
+        document.getElementById('restartBtnAll').style.display = '';
+        if (wrongQuestions.length > 0) {
+          document.getElementById('retryWrongBtn').style.display = '';
+        }
+        document.getElementById('retryLastBtn').style.display = '';
+        document.getElementById('score').innerHTML = `<b>終了！</b><br>正答数: ${correct} / ${quizData.length} (${Math.round(correct/quizData.length*100)}%)`;
+        return;
+      }
+      const q = quizData[current];
+      let html = `<div class="question-text"><b>Q${current+1}.</b> ${q.question}</div>`;
+
+      if (q.type === "single") {
+        const pairs = q.choices.map((c, idx) => ({ text: c, idx: idx+1 }));
+        shuffleArray(pairs);
+        q.shuffled = pairs;
+        html += pairs.map((c, idx) =>
+          `<button class="choice-btn" onclick="checkAnswerSingle(${idx+1})">${c.text}</button>`
+        ).join("");
+      } else if (q.type === "multi") {
+        const pairs = q.choices.map((c, idx) => ({ text: c, idx: idx+1 }));
+        shuffleArray(pairs);
+        q.shuffled = pairs;
+        html += pairs.map((c, idx) =>
+          `<label><input type="checkbox" class="choice-check" value="${c.idx}"><span class="choice-label">${c.text}</span></label>`
+        ).join("");
+        html += `<button id="answerBtn" class="answer-btn" onclick="checkAnswerMulti()">回答する</button>`;
+      } else if (q.type === "text") {
+        html += `<input type="text" id="textAnswer" placeholder="ここに入力" style="width:100%; padding:0.5em;">`;
+        html += `<button id="answerBtn" class="answer-btn" onclick="checkAnswerText()">回答する</button>`;
+      }
+
+      html += `<div id="result" class="result"></div>`;
+      html += `<div id="explanation" class="explanation" style="display:none;"></div>`;
+      document.getElementById('quiz').innerHTML = html;
+      document.getElementById('quiz').style.display = '';
+      document.getElementById('nextBtn').style.display = 'none';
+    }
+
+    window.checkAnswerSingle = function(choice) {
+      const q = quizData[current];
+      const correctIdx = q.shuffled.findIndex(p => p.idx === parseInt(q.answer, 10)) + 1;
+      const res = document.getElementById('result');
+      const exp = document.getElementById('explanation');
+      if (choice === correctIdx) {
+        res.innerHTML = "正解！";
+        res.style.color = "green";
+        correct++;
+      } else {
+        res.innerHTML = `不正解… 正解: ${q.shuffled[correctIdx-1].text}`;
+        res.style.color = "red";
+        wrongQuestions.push(q);
+      }
+      exp.innerHTML = q.explanation;
+      exp.style.display = "";
+
+      document.getElementById('nextBtn').style.display = '';
+      //ボタンの無効化
+      const buttons = Array.from(document.querySelectorAll('.choice-btn'));
+
+      // まず選んだボタンにマーク
+      buttons[choice - 1]?.classList.add('selected');
+
+      if (choice === correctIdx) {
+        buttons[choice - 1]?.classList.add('correct');
+      } else {
+        buttons[correctIdx - 1]?.classList.add('correct');
+      }
+
+      // その後で無効化（操作はできないけど見た目は保つ）
+      buttons.forEach(btn => btn.disabled = true);
+      
+    };
+
+    window.checkAnswerMulti = function() {
+      const q = quizData[current];
+      const correctAnswers = q.answer.split("|").map(x => parseInt(x.trim(), 10));
+      const checked = Array.from(document.querySelectorAll(".choice-check:checked")).map(c => parseInt(c.value, 10));
+      const res = document.getElementById('result');
+      const exp = document.getElementById('explanation');
+      if (JSON.stringify(checked.sort()) === JSON.stringify(correctAnswers.sort())) {
+        res.innerHTML = "正解！";
+        res.style.color = "green";
+        correct++;
+      } else {
+        const correctTexts = q.shuffled.filter(p => correctAnswers.includes(p.idx)).map(p => p.text);
+        res.innerHTML = `不正解… 正解: ${correctTexts.join(",")}`;
+        res.style.color = "red";
+        wrongQuestions.push(q);
+      }
+      exp.innerHTML = q.explanation;
+      exp.style.display = "";
+
+      document.getElementById('nextBtn').style.display = '';
+
+      const labels = document.querySelectorAll('.choice-label');
+      const checks = document.querySelectorAll('.choice-check');
+
+      labels.forEach((label, i) => {
+        const originalIdx = q.shuffled[i].idx;   // シャッフル前の番号
+        const isCorrect = correctAnswers.includes(originalIdx);
+        const isSelected = checks[i].checked;
+
+        if (isCorrect) {
+          // 正解は必ず緑
+          label.classList.add('correct');
+        }
+      })
+
+      document.querySelectorAll('.choice-check').forEach(c => c.disabled = true);
+      document.getElementById("answerBtn").disabled = true;
+
+    };
+
+    window.checkAnswerText = function() {
+      const q = quizData[current];
+      const userAns = document.getElementById("textAnswer").value.trim();
+      const res = document.getElementById('result');
+      const exp = document.getElementById('explanation');
+      if (userAns === q.answer) {
+        res.innerHTML = `正解！`;
+        res.style.color = "green";
+        correct++;
+      } else {
+        res.innerHTML = `不正解… 正解: ${q.answer}`;
+        res.style.color = "red";
+        wrongQuestions.push(q);
+      }
+      exp.innerHTML = q.explanation;
+      exp.style.display = "";
+
+      document.getElementById('nextBtn').style.display = '';
+
+      //入力欄の無効化
+      document.getElementById('textAnswer').readOnly = true;
+      document.getElementById("answerBtn").disabled = true;
+    };
+
+    document.getElementById('nextBtn').addEventListener('click', function() {
+      current++;
+      showQuiz();
+    });
+
+    document.getElementById('restartBtnAll').addEventListener('click', function() {
+      startQuiz(allQuestions);
+    });
+
+    document.getElementById('retryWrongBtn').addEventListener('click', function() {
+      if (wrongQuestions.length === 0) return;
+      startQuiz(wrongQuestions);
+    });
+
+    document.getElementById('retryLastBtn').addEventListener('click', function() {
+      if (lastPlayedQuestions.length === 0) return;
+      startQuiz(lastPlayedQuestions);
+    });
+  </script>
 </body>
 </html>
