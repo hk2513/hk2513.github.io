@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>テスト対策クイズ（3モード対応版＋All/RetryボタンUI改善）</title>
+  <title>テスト対策クイズ</title>
   <style>
     body { font-family: sans-serif; padding: 2em; max-width: 700px; margin: auto; background:#f6f7fb}
     .quiz-container { border: 1px solid #ccc; padding: 1.5em; border-radius: 12px; margin-top: 1em; background:#fff}
@@ -102,13 +102,67 @@
       margin: 0.5em auto;
     }
 
+    /*ランダム出題に関する部分*/
+    #shuffleToggle:disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
 
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1em;
+    }
+
+    .switch input {
+      display: none;
+    }
+
+    .slider {
+      position: relative;
+      width: 50px;
+      height: 26px;
+      background: #ccc;
+      border-radius: 26px;
+      transition: background 0.3s;
+      cursor: pointer;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      left: 2px;
+      top: 2px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+
+    input:checked + .slider {
+      background: #4CAF50;
+    }
+
+    input:checked + .slider::before {
+      transform: translateX(24px);
+    }
+
+    .toggle-label {
+      font-size: 1em;
+    }
 </style>
 </head>
 <body>
   <h1>テスト対策クイズ</h1>
   <p>CSVファイルを読み込んでクイズを開始します。</p>
   <input type="file" id="csvInput">
+  <label class="switch">
+      <input type="checkbox" id="shuffleToggle" checked>
+      <span class="slider"></span>
+      <span class="toggle-label">ランダム出題</span>
+  </label>
   <div id="quiz" class="quiz-container" style="display:none;"></div>
   <button id="nextBtn" style="display:none;">次の問題へ</button>
   <button id="restartBtnAll" style="display:none;">全問題をやり直す</button>
@@ -178,7 +232,12 @@
 
     function startQuiz(questionSet) {
       quizData = [...questionSet];
-      shuffleArray(quizData);
+      const shuffleEnabled = document.getElementById('shuffleToggle').checked;
+       // デバッグ：現在のトグル状態を確認
+      console.log("Shuffle:", shuffleEnabled);
+      if (shuffleEnabled){
+        shuffleArray(quizData);
+      }
       current = 0;
       correct = 0;
       wrongQuestions = [];
@@ -187,6 +246,7 @@
       document.getElementById('restartBtnAll').style.display = 'none';
       document.getElementById('retryWrongBtn').style.display = 'none';
       document.getElementById('retryLastBtn').style.display = 'none';
+      document.getElementById('shuffleToggle').disabled = true;
       showQuiz();
     }
 
@@ -195,6 +255,7 @@
         document.getElementById('quiz').style.display = 'none';
         document.getElementById('nextBtn').style.display = 'none';
         document.getElementById('restartBtnAll').style.display = '';
+        document.getElementById('shuffleToggle').disabled = false;
         if (wrongQuestions.length > 0) {
           document.getElementById('retryWrongBtn').style.display = '';
         }
